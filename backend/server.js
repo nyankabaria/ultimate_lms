@@ -127,6 +127,9 @@ app.get("/quizzes",(req,res)=>{
 res.json(quizzes);
 });
 
-app.listen(5000,()=>{
-console.log("Ultimate LMS Running");
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Ultimate LMS Running on port ${PORT}`);
 });
