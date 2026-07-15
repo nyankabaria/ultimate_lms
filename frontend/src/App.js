@@ -1,16 +1,20 @@
-
-import React,{useEffect,useState} from "react";
+import React, {useEffect, useState} from "react";
+import "./App.css";
 
 function App(){
 
+const API="https://ultimate-lms.onrender.com";
+
 const [page,setPage]=useState("home");
 
+const [name,setName]=useState("");
 const [email,setEmail]=useState("");
 const [password,setPassword]=useState("");
-const [name,setName]=useState("");
 const [role,setRole]=useState("student");
 
-const [user,setUser]=useState(null);
+const [user,setUser]=useState(
+JSON.parse(localStorage.getItem("user")) || null
+);
 
 const [video,setVideo]=useState(null);
 const [videoTitle,setVideoTitle]=useState("");
@@ -26,29 +30,44 @@ const [notes,setNotes]=useState([]);
 const [assignments,setAssignments]=useState([]);
 const [quizzes,setQuizzes]=useState([]);
 
+
 useEffect(()=>{
 loadData();
 },[]);
 
+
 const loadData=async()=>{
 
-const v=await fetch("http://localhost:5000/videos");
+try{
+
+let v=await fetch(`${API}/videos`);
 setVideos(await v.json());
 
-const n=await fetch("http://localhost:5000/notes");
+
+let n=await fetch(`${API}/notes`);
 setNotes(await n.json());
 
-const a=await fetch("http://localhost:5000/assignments");
+
+let a=await fetch(`${API}/assignments`);
 setAssignments(await a.json());
 
-const q=await fetch("http://localhost:5000/quizzes");
+
+let q=await fetch(`${API}/quizzes`);
 setQuizzes(await q.json());
+
+}
+catch(err){
+console.log(err);
+}
+
 };
+
+
 
 const register=async()=>{
 
-const response=await fetch(
-"http://localhost:5000/register",
+let response=await fetch(
+`${API}/api/auth/register`,
 {
 method:"POST",
 headers:{
@@ -60,20 +79,26 @@ email,
 password,
 role
 })
-}
-);
+});
 
-const data=await response.json();
+
+let data=await response.json();
 
 alert(data.message);
 
+if(response.ok){
 setPage("login");
+}
+
 };
+
+
 
 const login=async()=>{
 
-const response=await fetch(
-"http://localhost:5000/login",
+
+let response=await fetch(
+`${API}/api/auth/login`,
 {
 method:"POST",
 headers:{
@@ -83,63 +108,100 @@ body:JSON.stringify({
 email,
 password
 })
-}
+});
+
+
+let data=await response.json();
+
+
+if(response.ok){
+
+setUser(data.user);
+
+localStorage.setItem(
+"user",
+JSON.stringify(data.user)
 );
 
-const data=await response.json();
+localStorage.setItem(
+"token",
+data.token
+);
 
-if(data.role){
-setUser(data);
 setPage("dashboard");
-}else{
-alert(data.message);
+
+
 }
+else{
+
+alert(data.message);
+
+}
+
 };
+
+
+
+
 
 const uploadVideo=async()=>{
 
-const formData=new FormData();
+let form=new FormData();
 
-formData.append("title",videoTitle);
-formData.append("video",video);
+form.append("title",videoTitle);
+form.append("video",video);
+
 
 await fetch(
-"http://localhost:5000/upload-video",
+`${API}/upload-video`,
 {
 method:"POST",
-body:formData
+body:form
 }
 );
+
 
 alert("Video Uploaded");
 
 loadData();
+
 };
+
+
 
 const uploadNote=async()=>{
 
-const formData=new FormData();
 
-formData.append("title",noteTitle);
-formData.append("note",note);
+let form=new FormData();
+
+form.append("title",noteTitle);
+form.append("note",note);
+
 
 await fetch(
-"http://localhost:5000/upload-note",
+`${API}/upload-note`,
 {
 method:"POST",
-body:formData
+body:form
 }
 );
+
 
 alert("Note Uploaded");
 
 loadData();
+
 };
+
+
+
+
 
 const addAssignment=async()=>{
 
+
 await fetch(
-"http://localhost:5000/assignment",
+`${API}/assignment`,
 {
 method:"POST",
 headers:{
@@ -148,18 +210,24 @@ headers:{
 body:JSON.stringify({
 text:assignment
 })
-}
-);
+});
+
 
 alert("Assignment Added");
 
 loadData();
+
 };
+
+
+
+
 
 const addQuiz=async()=>{
 
+
 await fetch(
-"http://localhost:5000/quiz",
+`${API}/quiz`,
 {
 method:"POST",
 headers:{
@@ -168,190 +236,120 @@ headers:{
 body:JSON.stringify({
 question:quiz
 })
-}
-);
+});
+
 
 alert("Quiz Added");
 
 loadData();
+
 };
+
+
+
+
+const logout=()=>{
+
+localStorage.clear();
+
+setUser(null);
+
+setPage("home");
+
+};
+
+
+
 
 return(
 
 <div>
 
-<nav className="nav">
 
-<h2>ULTIMATE LMS</h2>
+<h1>ULTIMATE LMS</h1>
 
-<div>
 
-<button onClick={()=>setPage("home")}>Home</button>
+<nav>
 
-<button onClick={()=>setPage("about")}>About</button>
-
-<button onClick={()=>setPage("contact")}>Contact</button>
-
-<button onClick={()=>setPage("help")}>Help</button>
-
-<button onClick={()=>setPage("login")}>Login</button>
-
-<button onClick={()=>setPage("register")}>Register</button>
-
-</div>
-
-</nav>
-
-{page==="home" && (
-
-<div className="page">
-
-<h1>WELCOME TO THE ULTIMATE LMS</h1>
-
-<p>
-This Learning Management System allows students,
-teachers and administrators to interact professionally online.
-Students can watch videos, download notes, attempt quizzes,
-submit assignments and access online learning resources globally.
-</p>
-
-<h2>Latest Uploads</h2>
-
-<ul>
-
-<li>
-<button onClick={()=>setPage("login")}>
-Latest Videos (Login Required)
+<button onClick={()=>setPage("home")}>
+Home
 </button>
-</li>
 
-<li>
+
 <button onClick={()=>setPage("login")}>
-Latest Notes (Login Required)
-</button>
-</li>
-
-<li>
-<button onClick={()=>setPage("login")}>
-Latest Assignments (Login Required)
-</button>
-</li>
-
-</ul>
-
-<footer>
-<p>Ultimate LMS © 2026</p>
-</footer>
-
-</div>
-
-)}
-
-{page==="about" && (
-
-<div className="page">
-
-<h1>About Courses</h1>
-
-<p>
-Courses include technology, programming,
-network engineering, cybersecurity,
-electronics and online digital learning.
-</p>
-
-<footer>
-<p>Ultimate LMS © 2026</p>
-</footer>
-
-</div>
-
-)}
-
-{page==="contact" && (
-
-<div className="page">
-
-<h1>Contact Us</h1>
-
-<p>Email: support@lms.com</p>
-
-<p>Phone: +254700000000</p>
-
-<footer>
-<p>Ultimate LMS © 2026</p>
-</footer>
-
-</div>
-
-)}
-
-{page==="help" && (
-
-<div className="page">
-
-<h1>Help Center</h1>
-
-<p>
-Teachers upload videos, notes, quizzes and assignments.
-Students login to access learning materials.
-</p>
-
-<footer>
-<p>Ultimate LMS © 2026</p>
-</footer>
-
-</div>
-
-)}
-
-{page==="login" && (
-
-<div className="card">
-
-<h1>Login</h1>
-
-<input
-placeholder="Email"
-onChange={(e)=>setEmail(e.target.value)}
-/>
-
-<input
-type="password"
-placeholder="Password"
-onChange={(e)=>setPassword(e.target.value)}
-/>
-
-<button onClick={login}>
 Login
 </button>
 
+
+<button onClick={()=>setPage("register")}>
+Register
+</button>
+
+
+{user &&
+<button onClick={logout}>
+Logout
+</button>
+}
+
+</nav>
+
+
+
+
+
+{page==="home" &&
+
+<div>
+
+<h2>
+Welcome to Ultimate LMS
+</h2>
+
+
+<p>
+Online learning platform for students and teachers.
+</p>
+
+
 </div>
 
-)}
+}
 
-{page==="register" && (
+
+
+
+
+
+{page==="register" &&
 
 <div className="card">
 
-<h1>Register</h1>
+<h2>
+Register
+</h2>
+
 
 <input
 placeholder="Name"
-onChange={(e)=>setName(e.target.value)}
+onChange={e=>setName(e.target.value)}
 />
+
 
 <input
 placeholder="Email"
-onChange={(e)=>setEmail(e.target.value)}
+onChange={e=>setEmail(e.target.value)}
 />
+
 
 <input
 type="password"
 placeholder="Password"
-onChange={(e)=>setPassword(e.target.value)}
+onChange={e=>setPassword(e.target.value)}
 />
 
-<select onChange={(e)=>setRole(e.target.value)}>
+
+<select onChange={e=>setRole(e.target.value)}>
 
 <option value="student">
 Student
@@ -363,169 +361,255 @@ Teacher
 
 </select>
 
+
 <button onClick={register}>
-Register
+Create Account
 </button>
+
 
 </div>
 
-)}
+}
 
-{page==="dashboard" && user && (
 
-<div className="page">
 
-<h1>{user.role.toUpperCase()} DASHBOARD</h1>
 
-{(user.role==="teacher" || user.role==="admin") && (
+
+{page==="login" &&
 
 <div className="card">
 
-<h2>Upload Video</h2>
+<h2>
+Login
+</h2>
+
 
 <input
-placeholder="Video Title"
-onChange={(e)=>setVideoTitle(e.target.value)}
+placeholder="Email"
+onChange={e=>setEmail(e.target.value)}
 />
+
+
+<input
+type="password"
+placeholder="Password"
+onChange={e=>setPassword(e.target.value)}
+/>
+
+
+<button onClick={login}>
+Login
+</button>
+
+
+</div>
+
+}
+
+
+
+
+
+
+{page==="dashboard" && user &&
+
+<div>
+
+
+<h2>
+{user.role} Dashboard
+</h2>
+
+
+
+
+{
+(user.role==="admin" || user.role==="teacher") &&
+
+<div className="card">
+
+
+<h3>
+Upload Video
+</h3>
+
+
+<input
+placeholder="Title"
+onChange={e=>setVideoTitle(e.target.value)}
+/>
+
 
 <input
 type="file"
-accept="video/*"
-onChange={(e)=>setVideo(e.target.files[0])}
+onChange={e=>setVideo(e.target.files[0])}
 />
+
 
 <button onClick={uploadVideo}>
-Upload Video
+Upload
 </button>
 
-<h2>Upload Notes</h2>
+
+
+
+
+<h3>
+Upload Notes
+</h3>
+
 
 <input
-placeholder="Note Title"
-onChange={(e)=>setNoteTitle(e.target.value)}
+placeholder="Title"
+onChange={e=>setNoteTitle(e.target.value)}
 />
+
 
 <input
 type="file"
-accept=".pdf,.doc,.docx"
-onChange={(e)=>setNote(e.target.files[0])}
+onChange={e=>setNote(e.target.files[0])}
 />
 
+
 <button onClick={uploadNote}>
-Upload Notes
+Upload Note
 </button>
 
-<h2>Add Assignment</h2>
+
+
+
+
+<h3>
+Assignment
+</h3>
 
 <textarea
-onChange={(e)=>setAssignment(e.target.value)}
-></textarea>
+onChange={e=>setAssignment(e.target.value)}
+/>
+
 
 <button onClick={addAssignment}>
 Add Assignment
 </button>
 
-<h2>Add MCQ Quiz</h2>
+
+
+<h3>
+Quiz
+</h3>
+
 
 <textarea
-placeholder="Enter MCQ Question"
-onChange={(e)=>setQuiz(e.target.value)}
-></textarea>
+onChange={e=>setQuiz(e.target.value)}
+/>
+
 
 <button onClick={addQuiz}>
 Add Quiz
 </button>
 
+
 </div>
 
-)}
+}
 
-<div className="card">
 
-<h2>Videos</h2>
 
-{videos.map((v,i)=>(
 
-<div key={i}>
 
-<p>{v.title}</p>
+<h3>
+Videos
+</h3>
+
+{
+videos.map((v,i)=>
+
+<p key={i}>
 
 <a
-href={`http://localhost:5000/uploads/${v.file}`}
+href={`${API}/uploads/${v.file}`}
 target="_blank"
 rel="noreferrer"
 >
-Watch Video
+{v.title}
 </a>
 
-</div>
+</p>
 
-))}
+)
+}
 
-</div>
 
-<div className="card">
 
-<h2>Notes</h2>
 
-{notes.map((n,i)=>(
+<h3>
+Notes
+</h3>
 
-<div key={i}>
 
-<p>{n.title}</p>
+{
+notes.map((n,i)=>
+
+<p key={i}>
 
 <a
-href={`http://localhost:5000/uploads/${n.file}`}
+href={`${API}/uploads/${n.file}`}
 download
 >
-Download Note
+{n.title}
 </a>
 
+</p>
+
+)
+}
+
+
+
+<h3>
+Assignments
+</h3>
+
+{
+assignments.map((a,i)=>
+
+<p key={i}>
+{a.text}
+</p>
+
+)
+}
+
+
+
+
+<h3>
+Quizzes
+</h3>
+
+{
+quizzes.map((q,i)=>
+
+<p key={i}>
+{q.question}
+</p>
+
+)
+}
+
+
+
 </div>
 
-))}
+}
 
-</div>
 
-<div className="card">
-
-<h2>Assignments</h2>
-
-{assignments.map((a,i)=>(
-
-<div key={i}>
-<p>{a.text}</p>
-</div>
-
-))}
-
-</div>
-
-<div className="card">
-
-<h2>MCQ Quizzes</h2>
-
-{quizzes.map((q,i)=>(
-
-<div key={i}>
-<p>{q.question}</p>
-</div>
-
-))}
-
-</div>
-
-<footer>
-<p>Ultimate LMS © 2026</p>
-</footer>
-
-</div>
-
-)}
 
 </div>
 
 );
+
+
 }
 
 export default App;
